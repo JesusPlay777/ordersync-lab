@@ -6,13 +6,17 @@ The repository contains no employer code, production credentials, or real custom
 
 ## Current milestone
 
-`Phase 0 - Local preparation`
+`Phase 1 - Domain definition complete`
 
-- Python 3.12 and Django 5.2 LTS.
-- PostgreSQL 17 through Docker Compose.
-- API exposed only on `127.0.0.1:8010`.
-- PostgreSQL exposed only on `127.0.0.1:5433`.
-- Database-backed health endpoint and smoke test.
+- Python 3.12 and Django 5.2 LTS run locally with PostgreSQL 17 through Docker Compose.
+- The fictional Mercury Storefront and Atlas Warehouse boundaries are defined.
+- The order contract, lifecycle, inventory semantics, failure policy, and layered idempotency
+  rules are documented.
+- Eight reproducible acceptance scenarios define the evidence the implementation must provide.
+- No business model or AWS resource has been created yet.
+
+See the [domain definition](docs/domain.md), [local architecture](docs/architecture.md), and
+[idempotency decision](docs/adr/0002-idempotent-order-synchronization.md).
 
 ## Requirements
 
@@ -66,5 +70,6 @@ The PostgreSQL volume is retained. Removing it is a separate, destructive operat
 
 ## Next milestone
 
-Define the fictional Storefront-to-Warehouse contract, lifecycle states, idempotency rules, and acceptance scenarios before implementing business models.
+Implement the first local vertical slice: order ingestion, persistence, database-backed work,
+the fake Atlas adapter, retries, inventory projection, audit events, and status queries.
 
