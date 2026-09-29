@@ -1,4 +1,4 @@
-.PHONY: build up down ps logs check test lint format-check verify
+.PHONY: build up down ps logs check migrations-check test lint format-check verify
 
 build:
 	docker compose build
@@ -13,10 +13,13 @@ ps:
 	docker compose ps
 
 logs:
-	docker compose logs --tail=100 api
+	docker compose logs --tail=100 api worker
 
 check:
 	docker compose exec -T api python manage.py check
+
+migrations-check:
+	docker compose exec -T api python manage.py makemigrations --check --dry-run
 
 test:
 	docker compose exec -T api pytest
@@ -27,5 +30,5 @@ lint:
 format-check:
 	docker compose exec -T api ruff format --check .
 
-verify: check test lint format-check
+verify: check migrations-check test lint format-check
 

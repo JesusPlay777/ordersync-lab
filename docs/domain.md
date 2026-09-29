@@ -1,6 +1,6 @@
 # OrderSync Lab domain definition
 
-- Status: Accepted for the first vertical slice
+- Status: Implemented for the first vertical slice
 - Date: 2026-09-27
 
 ## Purpose and scope
@@ -52,7 +52,7 @@ evaluated only after this workflow works and its requirements are measurable.
 
 ## Order contract
 
-The planned ingestion endpoint is `POST /api/v1/orders/`.
+The implemented ingestion endpoint is `POST /api/v1/orders/`.
 
 ```http
 Idempotency-Key: mercury:ORD-1001:v1
@@ -89,8 +89,8 @@ Contract rules:
 - Customer, address, payment, and other personal data are absent.
 - Accepted orders are immutable; amendments and cancellations are deferred.
 
-The planned read endpoint is `GET /api/v1/orders/{id}/`. Its exact schema will be frozen by API
-tests during implementation.
+The implemented read endpoint is `GET /api/v1/orders/{id}/`. API tests freeze its status,
+attempt, item result, correlation, and audit behavior.
 
 ## Lifecycle
 

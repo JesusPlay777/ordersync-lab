@@ -1,19 +1,22 @@
 # OrderSync Lab
 
-OrderSync Lab is a public, fictional integration project for demonstrating reliable order processing, idempotency, recoverable failures, auditability, and an eventual AWS deployment.
+OrderSync Lab is a public, fictional integration project for demonstrating reliable order
+processing, idempotency, recoverable failures, auditability, and an eventual AWS deployment.
 
-The repository contains no employer code, production credentials, or real customer data. AWS resources are intentionally out of scope for the local preparation phase.
+The repository contains no employer code, production credentials, or real customer data. AWS
+resources remain out of scope until the local workflow is complete and measurable.
 
 ## Current milestone
 
-`Phase 1 - Domain definition complete`
+`Phase 2 - First local vertical slice complete`
 
 - Python 3.12 and Django 5.2 LTS run locally with PostgreSQL 17 through Docker Compose.
-- The fictional Mercury Storefront and Atlas Warehouse boundaries are defined.
-- The order contract, lifecycle, inventory semantics, failure policy, and layered idempotency
-  rules are documented.
-- Eight reproducible acceptance scenarios define the evidence the implementation must provide.
-- No business model or AWS resource has been created yet.
+- The API atomically accepts immutable Mercury Storefront orders.
+- Layered idempotency prevents duplicate orders, jobs, reservations, and stock movements.
+- A separate worker processes durable PostgreSQL jobs through the fake Atlas Warehouse adapter.
+- Atlas supports all-or-nothing stock reservations, deterministic failures, and safe retries.
+- Order status exposes attempts, inventory results, correlation IDs, and audit events.
+- Fourteen automated tests cover the first slice; no AWS resource has been created.
 
 See the [domain definition](docs/domain.md), [local architecture](docs/architecture.md), and
 [idempotency decision](docs/adr/0002-idempotent-order-synchronization.md).
@@ -51,10 +54,44 @@ Expected response:
 {"service":"ordersync-api","status":"ok","database":"ok"}
 ```
 
+The Compose stack contains `api`, `worker`, and `db`. The worker processes accepted orders in
+the background.
+
+## Run the happy path
+
+Submit a fictional order:
+
+```bash
+curl --request POST http://127.0.0.1:8010/api/v1/orders/ \
+  --header 'Content-Type: application/json' \
+  --header 'Idempotency-Key: mercury:ORD-DEMO-001:v1' \
+  --data '{
+    "source": "mercury-storefront",
+    "external_order_id": "ORD-DEMO-001",
+    "placed_at": "2026-09-29T17:45:00Z",
+    "currency": "USD",
+    "items": [{"sku": "MUG-BLUE", "quantity": 2, "unit_price": "12.50"}]
+  }'
+```
+
+Use the returned `status_url` to inspect the result and audit timeline. The inventory projection
+is available at `GET /api/v1/inventory/`.
+
+To demonstrate a recoverable Atlas outage before submitting a new external order ID:
+
+```bash
+docker compose exec -T api \
+  python manage.py configure_atlas_failure ORD-RETRY-001 --failures 1
+```
+
+The order first enters `retry_pending`; the worker then retries it without decrementing stock
+twice.
+
 ## Quality checks
 
 ```bash
 docker compose exec -T api python manage.py check
+docker compose exec -T api python manage.py makemigrations --check --dry-run
 docker compose exec -T api pytest
 docker compose exec -T api ruff check .
 docker compose exec -T api ruff format --check .
@@ -66,10 +103,11 @@ docker compose exec -T api ruff format --check .
 docker compose down
 ```
 
-The PostgreSQL volume is retained. Removing it is a separate, destructive operation and is not part of the normal stop command.
+The PostgreSQL volume is retained. Removing it is a separate, destructive operation and is not
+part of the normal stop command.
 
 ## Next milestone
 
-Implement the first local vertical slice: order ingestion, persistence, database-backed work,
-the fake Atlas adapter, retries, inventory projection, audit events, and status queries.
+Evaluate AWS services against this working flow, document security and cost tradeoffs, and
+choose the smallest cloud architecture that preserves its delivery and observability guarantees.
 

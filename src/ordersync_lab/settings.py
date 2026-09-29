@@ -13,6 +13,7 @@ ALLOWED_HOSTS = [
 
 INSTALLED_APPS = [
     "django.contrib.contenttypes",
+    "ordersync_lab.orders.apps.OrdersConfig",
     "django.contrib.auth",
     "django.contrib.sessions",
     "django.contrib.messages",
@@ -66,6 +67,14 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+ORDERSYNC_MAX_ATTEMPTS = int(os.getenv("ORDERSYNC_MAX_ATTEMPTS", "3"))
+ORDERSYNC_RETRY_DELAYS_SECONDS = tuple(
+    int(value.strip())
+    for value in os.getenv("ORDERSYNC_RETRY_DELAYS_SECONDS", "5,30").split(",")
+    if value.strip()
+)
+ORDERSYNC_JOB_LOCK_TIMEOUT_SECONDS = int(os.getenv("ORDERSYNC_JOB_LOCK_TIMEOUT_SECONDS", "300"))
 
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],

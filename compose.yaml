@@ -33,6 +33,9 @@ services:
       POSTGRES_PORT: "5432"
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-ordersync-insecure-local-key}
       DJANGO_DEBUG: ${DJANGO_DEBUG:-true}
+      ORDERSYNC_MAX_ATTEMPTS: ${ORDERSYNC_MAX_ATTEMPTS:-3}
+      ORDERSYNC_RETRY_DELAYS_SECONDS: ${ORDERSYNC_RETRY_DELAYS_SECONDS:-5,30}
+      ORDERSYNC_JOB_LOCK_TIMEOUT_SECONDS: ${ORDERSYNC_JOB_LOCK_TIMEOUT_SECONDS:-300}
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,api}
     depends_on:
       db:
@@ -52,6 +55,29 @@ services:
     volumes:
       - .:/app
 
+
+  worker:
+    build:
+      context: .
+    restart: unless-stopped
+    command: ["python", "manage.py", "process_sync_jobs", "--poll-interval=1"]
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ordersync}
+      POSTGRES_USER: ${POSTGRES_USER:-ordersync}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ordersync_local}
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-ordersync-insecure-local-key}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-true}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,api}
+      ORDERSYNC_MAX_ATTEMPTS: ${ORDERSYNC_MAX_ATTEMPTS:-3}
+      ORDERSYNC_RETRY_DELAYS_SECONDS: ${ORDERSYNC_RETRY_DELAYS_SECONDS:-5,30}
+      ORDERSYNC_JOB_LOCK_TIMEOUT_SECONDS: ${ORDERSYNC_JOB_LOCK_TIMEOUT_SECONDS:-300}
+    depends_on:
+      api:
+        condition: service_healthy
+    volumes:
+      - .:/app
 volumes:
   ordersync_postgres_data:
 

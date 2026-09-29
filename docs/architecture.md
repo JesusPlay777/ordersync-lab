@@ -37,9 +37,20 @@ Workers must claim jobs safely so two workers cannot process the same due attemp
 Outbound reservation idempotency still protects Atlas when a worker cannot know whether an
 earlier call took effect.
 
-## Current constraint
+## Current implementation
 
-There are still no business models, workers, queues, AWS SDKs, or cloud resources in the code.
-Phase 2 will implement the documented vertical slice and prove it with tests before any AWS
-service is selected.
+- Django REST Framework exposes order ingestion, order status, inventory projection, and health
+  endpoints.
+- PostgreSQL stores orders, idempotency responses, pending jobs, attempts, Atlas stock and
+  reservations, inventory projections, and append-only audit events.
+- A separate Compose worker claims due jobs with row locks and calls the Atlas boundary outside
+  the OrderSync state transaction.
+- The local Atlas adapter persists its reservation key and result, so repeating an uncertain
+  call cannot decrement stock twice.
+- Stale processing locks are recovered after a configurable timeout, and transient failures use
+  the documented three-attempt retry policy.
+
+There is no external queue, AWS SDK, or cloud resource. Those choices remain deferred until the
+working local flow is used to compare delivery guarantees, operational complexity, security,
+and cost.
 
