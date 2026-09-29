@@ -50,7 +50,13 @@ earlier call took effect.
 - Stale processing locks are recovered after a configurable timeout, and transient failures use
   the documented three-attempt retry policy.
 
-There is no external queue, AWS SDK, or cloud resource. Those choices remain deferred until the
-working local flow is used to compare delivery guarantees, operational complexity, security,
-and cost.
+There is no external queue, AWS SDK, or cloud resource. The first cloud target has now been
+selected without deploying it: API Gateway and Lambda for the API, a scheduled Lambda worker,
+private RDS PostgreSQL, and the existing database-backed job queue. The complete comparison is
+in the [AWS architecture evaluation](aws-architecture-evaluation.md), and the decision is
+recorded in [ADR 0003](adr/0003-serverless-aws-baseline.md).
+
+Local Docker Compose remains the development and demonstration environment. Cloud adaptation
+must preserve the same domain rules, transaction boundaries, and automated tests rather than
+creating a second behavior specific to AWS.
 

@@ -8,7 +8,7 @@ resources remain out of scope until the local workflow is complete and measurabl
 
 ## Current milestone
 
-`Phase 2 - First local vertical slice complete`
+`Phase 3 - AWS architecture evaluated; not deployed`
 
 - Python 3.12 and Django 5.2 LTS run locally with PostgreSQL 17 through Docker Compose.
 - The API atomically accepts immutable Mercury Storefront orders.
@@ -17,9 +17,14 @@ resources remain out of scope until the local workflow is complete and measurabl
 - Atlas supports all-or-nothing stock reservations, deterministic failures, and safe retries.
 - Order status exposes attempts, inventory results, correlation IDs, and audit events.
 - Fourteen automated tests cover the first slice; no AWS resource has been created.
+- The first AWS baseline is documented as API Gateway, Lambda, private RDS PostgreSQL, ECR,
+  Parameter Store, Secrets Manager, CloudWatch, and EventBridge Scheduler.
+- The existing PostgreSQL job table remains the durable queue until measured requirements
+  justify an outbox-to-SQS design.
 
 See the [domain definition](docs/domain.md), [local architecture](docs/architecture.md), and
-[idempotency decision](docs/adr/0002-idempotent-order-synchronization.md).
+[AWS architecture evaluation](docs/aws-architecture-evaluation.md). The selected cloud baseline
+is recorded in [ADR 0003](docs/adr/0003-serverless-aws-baseline.md).
 
 ## Requirements
 
@@ -108,6 +113,7 @@ part of the normal stop command.
 
 ## Next milestone
 
-Evaluate AWS services against this working flow, document security and cost tradeoffs, and
-choose the smallest cloud architecture that preserves its delivery and observability guarantees.
+Adapt the Django API and bounded worker for Lambda, add tests for their AWS event handlers, and
+prepare infrastructure as code for review. Planning or inspecting that infrastructure will not
+authorize applying it; deployment remains behind the cost and security gate in ADR 0003.
 
