@@ -56,7 +56,7 @@ DATABASES = {
         "PASSWORD": os.getenv("POSTGRES_PASSWORD", "ordersync_local"),
         "HOST": os.getenv("POSTGRES_HOST", "127.0.0.1"),
         "PORT": os.getenv("POSTGRES_PORT", "5433"),
-        "CONN_MAX_AGE": 60,
+        "CONN_MAX_AGE": int(os.getenv("POSTGRES_CONN_MAX_AGE", "0")),
     }
 }
 

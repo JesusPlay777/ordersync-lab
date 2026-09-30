@@ -1,0 +1,31 @@
+{
+  "version": "2.0",
+  "routeKey": "GET /api/v1/health/",
+  "rawPath": "/api/v1/health/",
+  "rawQueryString": "",
+  "headers": {
+    "accept": "application/json",
+    "host": "localhost",
+    "user-agent": "ordersync-lab-test"
+  },
+  "requestContext": {
+    "accountId": "123456789012",
+    "apiId": "ordersync-test-api",
+    "domainName": "localhost",
+    "domainPrefix": "ordersync-test-api",
+    "http": {
+      "method": "GET",
+      "path": "/api/v1/health/",
+      "protocol": "HTTP/1.1",
+      "sourceIp": "127.0.0.1",
+      "userAgent": "ordersync-lab-test"
+    },
+    "requestId": "test-request-id",
+    "routeKey": "GET /api/v1/health/",
+    "stage": "$default",
+    "time": "29/Sep/2026:12:00:00 +0000",
+    "timeEpoch": 1790683200000
+  },
+  "body": null,
+  "isBase64Encoded": false
+}
