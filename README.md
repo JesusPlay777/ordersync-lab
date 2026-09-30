@@ -16,13 +16,14 @@ resources remain out of scope until the local workflow is complete and measurabl
 - A separate worker processes durable PostgreSQL jobs through the fake Atlas Warehouse adapter.
 - Atlas supports all-or-nothing stock reservations, deterministic failures, and safe retries.
 - Order status exposes attempts, inventory results, correlation IDs, and audit events.
-- Sixteen automated tests cover the local flow; no AWS resource has been created.
+- Nineteen automated tests cover the local flow; no AWS resource has been created.
 - The first AWS baseline is documented as API Gateway, Lambda, private RDS PostgreSQL, ECR,
   Parameter Store, Secrets Manager, CloudWatch, and EventBridge Scheduler.
 - The existing PostgreSQL job table remains the durable queue until measured requirements
   justify an outbox-to-SQS design.
 - An HTTP Lambda handler locally adapts API Gateway HTTP API v2 events to the same Django ASGI
   application and is covered by integration tests.
+- A scheduled Lambda worker processes a bounded batch and stops before its timeout budget.
 
 See the [domain definition](docs/domain.md), [local architecture](docs/architecture.md), and
 [AWS architecture evaluation](docs/aws-architecture-evaluation.md). The selected cloud baseline
@@ -115,7 +116,7 @@ part of the normal stop command.
 
 ## Next milestone
 
-Implement the bounded Lambda worker handler and its scheduled-event tests, then prepare an
-initial AWS SAM template for local validation. Planning or inspecting that infrastructure will
-not authorize applying it; deployment remains behind the cost and security gate in ADR 0003.
+Prepare an initial AWS SAM template for local validation of both Lambda handlers. Planning or
+inspecting that infrastructure will not authorize applying it; deployment remains behind the
+cost and security gate in ADR 0003.
 

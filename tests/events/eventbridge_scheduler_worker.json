@@ -1,0 +1,4 @@
+{
+  "source": "ordersync.scheduler",
+  "detail-type": "OrderSync Worker Tick"
+}

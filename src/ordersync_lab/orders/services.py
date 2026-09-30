@@ -433,8 +433,9 @@ def _schedule_retry(claimed: ClaimedJob, error_code: str) -> str:
         return outcome
 
 
-def process_next_job(*, adapter=None, now=None) -> str | None:
-    recover_stale_jobs(now=now)
+def process_next_job(*, adapter=None, now=None, recover_stale=True) -> str | None:
+    if recover_stale:
+        recover_stale_jobs(now=now)
     claimed = claim_next_job(now=now)
     if not claimed:
         return None
