@@ -24,10 +24,13 @@ resources remain out of scope until the local workflow is complete and measurabl
 - An HTTP Lambda handler locally adapts API Gateway HTTP API v2 events to the same Django ASGI
   application and is covered by integration tests.
 - A scheduled Lambda worker processes a bounded batch and stops before its timeout budget.
+- An AWS SAM template packages both handlers as local Lambda container images; its schedule is
+  disabled and it creates nothing unless someone explicitly deploys it.
 
 See the [domain definition](docs/domain.md), [local architecture](docs/architecture.md), and
 [AWS architecture evaluation](docs/aws-architecture-evaluation.md). The selected cloud baseline
-is recorded in [ADR 0003](docs/adr/0003-serverless-aws-baseline.md).
+is recorded in [ADR 0003](docs/adr/0003-serverless-aws-baseline.md). The local SAM workflow is
+documented in [docs/sam-local.md](docs/sam-local.md).
 
 ## Requirements
 
@@ -116,7 +119,7 @@ part of the normal stop command.
 
 ## Next milestone
 
-Prepare an initial AWS SAM template for local validation of both Lambda handlers. Planning or
-inspecting that infrastructure will not authorize applying it; deployment remains behind the
-cost and security gate in ADR 0003.
+Extend the reviewed infrastructure as code with the private network, RDS, IAM roles, parameter
+and secret references, and observability resources. No infrastructure may be applied until the
+cost and security gate in ADR 0003 is complete.
 

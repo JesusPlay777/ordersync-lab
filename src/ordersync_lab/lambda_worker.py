@@ -1,17 +1,22 @@
 """AWS Lambda entry point for bounded scheduled job processing."""
 
+import os
 from collections import Counter
 
+import django
 from django.conf import settings
 from django.db import close_old_connections
 
-from ordersync_lab.orders.services import process_next_job
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "ordersync_lab.settings")
+django.setup()
 
 MAX_BATCH_SIZE = 100
 OUTCOMES = ("synced", "failed", "retry_pending")
 
 
 def handler(event, context):
+    from ordersync_lab.orders.services import process_next_job
+
     batch_limit = max(1, min(settings.ORDERSYNC_WORKER_BATCH_SIZE, MAX_BATCH_SIZE))
     minimum_remaining_ms = max(0, settings.ORDERSYNC_WORKER_MIN_REMAINING_MS)
     outcomes = Counter()

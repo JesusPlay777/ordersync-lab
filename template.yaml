@@ -1,0 +1,91 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Local-only SAM model for the OrderSync Lab Lambda handlers.
+
+Globals:
+  Function:
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        DJANGO_SETTINGS_MODULE: ordersync_lab.settings
+        DJANGO_DEBUG: "false"
+        DJANGO_SECRET_KEY: local-template-placeholder
+        DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+        POSTGRES_DB: ordersync-template-placeholder
+        POSTGRES_USER: ordersync-template-placeholder
+        POSTGRES_PASSWORD: local-template-placeholder
+        POSTGRES_HOST: invalid.local
+        POSTGRES_PORT: "5432"
+        POSTGRES_CONN_MAX_AGE: "0"
+        ORDERSYNC_MAX_ATTEMPTS: "3"
+        ORDERSYNC_RETRY_DELAYS_SECONDS: "60,300"
+        ORDERSYNC_JOB_LOCK_TIMEOUT_SECONDS: "300"
+        ORDERSYNC_WORKER_BATCH_SIZE: "10"
+        ORDERSYNC_WORKER_MIN_REMAINING_MS: "5000"
+    Tags:
+      Project: OrderSyncLab
+      Environment: local-sam
+
+Resources:
+  OrderSyncHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: $default
+      DefinitionBody:
+        openapi: 3.0.1
+        info:
+          title: OrderSync Lab HTTP API
+          version: "1.0"
+        paths: {}
+      Tags:
+        Project: OrderSyncLab
+        Environment: local-sam
+
+  OrderSyncApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      MemorySize: 512
+      Timeout: 30
+      ImageConfig:
+        Command:
+          - ordersync_lab.lambda_http.handler
+      Events:
+        Proxy:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref OrderSyncHttpApi
+            Method: ANY
+            Path: /{proxy+}
+            PayloadFormatVersion: "2.0"
+    Metadata:
+      Dockerfile: Dockerfile.lambda
+      DockerContext: .
+      DockerTag: api-local
+      DockerImage: ordersync-lab-lambda
+
+  OrderSyncWorkerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      MemorySize: 512
+      Timeout: 60
+      ImageConfig:
+        Command:
+          - ordersync_lab.lambda_worker.handler
+      Events:
+        WorkerSchedule:
+          Type: ScheduleV2
+          Properties:
+            Description: Invoke the bounded OrderSync worker once per minute.
+            ScheduleExpression: rate(1 minute)
+            FlexibleTimeWindow:
+              Mode: "OFF"
+            Input: '{"source":"ordersync.scheduler","detail-type":"OrderSync Worker Tick"}'
+            State: DISABLED
+    Metadata:
+      Dockerfile: Dockerfile.lambda
+      DockerContext: .
+      DockerTag: worker-local
+      DockerImage: ordersync-lab-lambda

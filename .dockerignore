@@ -7,4 +7,6 @@ __pycache__
 .ruff_cache
 .coverage
 htmlcov
+.aws-sam
+sam-env.local.json
 

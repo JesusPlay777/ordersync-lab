@@ -1,0 +1,18 @@
+{
+  "Parameters": {
+    "POSTGRES_DB": "ordersync",
+    "POSTGRES_USER": "ordersync",
+    "POSTGRES_PASSWORD": "ordersync_local",
+    "POSTGRES_HOST": "db",
+    "POSTGRES_PORT": "5432",
+    "POSTGRES_CONN_MAX_AGE": "0",
+    "DJANGO_SECRET_KEY": "ordersync-insecure-local-key",
+    "DJANGO_DEBUG": "false",
+    "DJANGO_ALLOWED_HOSTS": "localhost,127.0.0.1",
+    "ORDERSYNC_MAX_ATTEMPTS": "3",
+    "ORDERSYNC_RETRY_DELAYS_SECONDS": "5,30",
+    "ORDERSYNC_JOB_LOCK_TIMEOUT_SECONDS": "300",
+    "ORDERSYNC_WORKER_BATCH_SIZE": "10",
+    "ORDERSYNC_WORKER_MIN_REMAINING_MS": "5000"
+  }
+}

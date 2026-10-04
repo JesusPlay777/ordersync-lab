@@ -1,0 +1,19 @@
+version = 0.1
+
+[default.global.parameters]
+region = "us-east-1"
+
+[default.build.parameters]
+cached = true
+use_buildkit = true
+
+[default.local_invoke.parameters]
+env_vars = "sam-env.local.json"
+docker_network = "ordersync-lab_default"
+
+[default.local_start_api.parameters]
+env_vars = "sam-env.local.json"
+docker_network = "ordersync-lab_default"
+host = "127.0.0.1"
+port = 3000
+warm_containers = "LAZY"
