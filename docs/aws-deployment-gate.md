@@ -18,8 +18,9 @@ templates do not establish Free-plan eligibility or a spending cap.
 | Teardown | Named operator, UTC start/end window, order of stack removal, deletion protection, snapshot and ECR image decisions. |
 | Authorization | Explicit separate approval for resource creation and later public exposure; record who approved and when. |
 
-Status: **pending**. No account-specific prices, credit balances, recipient addresses, or
-authorization have been verified in this repository. Fill this gate with current account data
-and a saved [AWS Pricing Calculator](https://calculator.aws/) estimate before making any AWS
-write. The [ADR deployment gate](adr/0003-serverless-aws-baseline.md#deployment-gate) remains
-authoritative.
+Status: **pending; deployment not approved**. The dated
+[cost and security review](aws-cost-security-review-2026-10-11.md) records a public-price
+baseline, calculator inputs, controls and open security findings. Current account credit
+balance, recipient/alert delivery, a saved [AWS Pricing Calculator](https://calculator.aws/)
+estimate, and authorization remain unverified. Close those items before any AWS write.
+The [ADR deployment gate](adr/0003-serverless-aws-baseline.md#deployment-gate) remains authoritative.
