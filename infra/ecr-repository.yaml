@@ -1,0 +1,49 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Review-only private ECR repository for one OrderSync Lab Lambda image.
+
+Parameters:
+  Owner:
+    Type: String
+    MinLength: 1
+    Description: Owner tag for a future approved deployment.
+
+Resources:
+  OrderSyncRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: ordersync-lab
+      EmptyOnDelete: false
+      ImageTagMutability: IMMUTABLE
+      EncryptionConfiguration:
+        EncryptionType: AES256
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      RepositoryPolicyText:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowSameAccountLambdaImageRetrieval
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - ecr:BatchGetImage
+              - ecr:GetDownloadUrlForLayer
+            Resource: "*"
+            Condition:
+              ArnLike:
+                aws:SourceArn: !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:*"
+      Tags:
+        - Key: Project
+          Value: OrderSyncLab
+        - Key: Environment
+          Value: demo
+        - Key: Owner
+          Value: !Ref Owner
+
+Outputs:
+  RepositoryUri:
+    Description: ECR repository URI for a future, separately approved image push.
+    Value: !GetAtt OrderSyncRepository.RepositoryUri
+  RepositoryArn:
+    Description: ARN for reviewing narrowly scoped publish permissions.
+    Value: !GetAtt OrderSyncRepository.Arn

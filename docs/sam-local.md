@@ -1,21 +1,25 @@
 # Local AWS SAM validation
 
 This stage validates the Lambda packaging and event wiring without calling AWS deployment APIs
-or creating cloud resources. AWS SAM uses Docker to build and invoke the same two handlers
+or creating cloud resources. AWS SAM uses Docker to build and invoke the same handlers
 already covered by the test suite. The first build downloads the public Lambda base image.
 
 ## What the template models
 
 - `OrderSyncApiFunction` runs `ordersync_lab.lambda_http.handler` behind an HTTP API v2 proxy.
 - `OrderSyncWorkerFunction` runs `ordersync_lab.lambda_worker.handler` from EventBridge Scheduler.
-- Both functions build from `Dockerfile.lambda`; their local tags differ only so SAM can manage
-  two function artifacts. A deployment design can publish the same image digest to one ECR
+- `OrderSyncMigrationFunction` runs `ordersync_lab.lambda_migrate.handler` manually; only a
+  read-only migration plan is exposed as a Make target.
+- All three functions build from `Dockerfile.lambda`; their local tags differ only so SAM can
+  manage separate function artifacts. A deployment design can publish one image digest to ECR
   repository and select each handler with `ImageConfig.Command`.
 - The schedule is `DISABLED` in the template. Enabling it requires a later explicit decision.
 
 The template intentionally does not define RDS, VPC, ECR, Parameter Store, Secrets Manager, or
 deployment permissions. Local PostgreSQL continues to supply the database through the Compose
-network.
+network. Separate [network/database](aws-network-database.md) and
+[cloud functions](aws-cloud-functions.md) templates model a future AWS connection without
+changing this local workflow.
 
 ## Prerequisites
 
@@ -53,11 +57,13 @@ Neither command deploys resources.
 ```bash
 make sam-local-api-invoke
 make sam-local-worker-invoke
+make sam-local-migration-plan
 ```
 
 The commands attach the Lambda containers to `ordersync-lab_default`, allowing them to resolve
 the Compose database as `db`. The HTTP invocation should return the health response. The worker
-invocation returns a bounded-batch summary and may process due jobs in the local database.
+invocation returns a bounded-batch summary and may process due jobs in the local database. The
+migration plan shows pending local migrations without applying them.
 
 To expose the HTTP API emulator at `http://127.0.0.1:3000`:
 

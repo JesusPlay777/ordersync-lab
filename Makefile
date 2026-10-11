@@ -1,6 +1,7 @@
 .PHONY: build up down ps logs check migrations-check test lint format-check verify \
 	sam-prepare-env sam-validate sam-build sam-local-api-invoke sam-local-worker-invoke \
-	sam-local-api
+	sam-local-migration-plan \
+	sam-local-api infra-validate cloud-validate ecr-validate cloud-image-build
 
 SAM_CLI_TELEMETRY ?= 0
 export SAM_CLI_TELEMETRY
@@ -44,6 +45,19 @@ sam-prepare-env:
 sam-validate:
 	sam validate --lint
 
+infra-validate:
+	sam validate --lint --template-file infra/network-database.yaml --region us-east-1
+
+cloud-validate:
+	sam validate --lint --template-file infra/cloud-functions.yaml --region us-east-1
+
+ecr-validate:
+	sam validate --lint --template-file infra/ecr-repository.yaml --region us-east-1
+
+cloud-image-build:
+	docker buildx build --platform linux/amd64 --provenance=false --load \
+		-f Dockerfile.lambda -t ordersync-lab:cloud-candidate .
+
 sam-build:
 	sam build
 
@@ -54,6 +68,10 @@ sam-local-api-invoke: sam-prepare-env sam-build
 sam-local-worker-invoke: sam-prepare-env sam-build
 	sam local invoke OrderSyncWorkerFunction \
 		--event tests/events/eventbridge_scheduler_worker.json
+
+sam-local-migration-plan: sam-prepare-env sam-build
+	sam local invoke OrderSyncMigrationFunction \
+		--event tests/events/migration_plan.json
 
 sam-local-api: sam-prepare-env sam-build
 	sam local start-api --port $(SAM_PORT)

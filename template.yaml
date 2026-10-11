@@ -89,3 +89,18 @@ Resources:
       DockerContext: .
       DockerTag: worker-local
       DockerImage: ordersync-lab-lambda
+
+  OrderSyncMigrationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      MemorySize: 512
+      Timeout: 300
+      ImageConfig:
+        Command:
+          - ordersync_lab.lambda_migrate.handler
+    Metadata:
+      Dockerfile: Dockerfile.lambda
+      DockerContext: .
+      DockerTag: migration-local
+      DockerImage: ordersync-lab-lambda

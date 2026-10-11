@@ -95,10 +95,13 @@ Choose Lambda for both the API and worker in the first deployment. The expected 
 intermittent, every job is short, and minimizing idle infrastructure is more valuable than
 preserving the exact container runtime behavior.
 
-Use one optimized container image with two handlers:
+Use one optimized container image with two operational handlers:
 
 - an HTTP handler adapting Django's ASGI application to Lambda; and
 - a worker handler that claims and processes a bounded number of due `SyncJob` rows.
+
+A third handler in the same image is reserved for manually planned and confirmed Django
+migrations into private RDS; it has no HTTP or schedule trigger.
 
 The worker runs once per minute through EventBridge Scheduler. Cloud retry delays become 60 and
 300 seconds through environment configuration; the local 5 and 30 second defaults remain useful
@@ -181,8 +184,8 @@ credits. This must not be interpreted as a permanent zero-cost database. See
 ## Container registry: ECR decision
 
 Use one private ECR repository and one shared image for the API, worker, and migration handler.
-Use immutable commit-SHA tags, enable scan-on-push, and keep at most the latest three release
-images plus the active image.
+Use immutable commit-SHA tags and enable scan-on-push. Review active function digests before
+manually pruning older images; the first template has no automatic lifecycle deletion rule.
 
 ECR currently offers new customers 500 MB per month of private repository storage for one year;
 storage beyond the allowance is illustrated at USD 0.10 per GB-month. In-Region transfer from

@@ -60,6 +60,15 @@ DATABASES = {
     }
 }
 
+postgres_sslmode = os.getenv("POSTGRES_SSLMODE")
+postgres_sslrootcert = os.getenv("POSTGRES_SSLROOTCERT")
+if postgres_sslmode or postgres_sslrootcert:
+    DATABASES["default"]["OPTIONS"] = {}
+    if postgres_sslmode:
+        DATABASES["default"]["OPTIONS"]["sslmode"] = postgres_sslmode
+    if postgres_sslrootcert:
+        DATABASES["default"]["OPTIONS"]["sslrootcert"] = postgres_sslrootcert
+
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
 USE_I18N = True
