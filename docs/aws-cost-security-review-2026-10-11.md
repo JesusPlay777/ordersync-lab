@@ -3,6 +3,8 @@
 This is a **read-only review**, not approval to deploy, push to ECR, run migrations,
 enable the public API or upgrade the account. The [deployment gate](aws-deployment-gate.md)
 remains closed. Local validation cannot prove account eligibility or cap spending.
+The [reproducible component-by-component estimate](aws-cost-estimate-2026-10-11.md) extends
+this initial cost floor and records the account screenshots received later on 2026-10-11.
 
 ## Cost model before credits and taxes
 
@@ -53,18 +55,22 @@ TCP 5432 only; RDS encryption and `rds.force_ssl=1`; PostgreSQL `verify-full`; d
 container image; separate execution roles; API endpoint and worker schedule initially disabled;
 seven-day log retention and reserved concurrency 2/1/1.
 
-## Unverified account evidence and decision
+## Account evidence and decision
 
-The 2026-09-27 report records a Free account, USD 100 initial credits, a nominal expiry of
-2027-03-27 **or earlier on credit exhaustion**, `My Zero-Spend Budget` with an actual-cost
-alert above USD 0.01 to one recipient, and an estimated USD 0.00 invoice at that time. Those
-historical observations do not prove the 2026-10-11 account state. AWS Budgets can lag and
-notifications are not a hard cap ([AWS Budgets documentation](https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-managing-costs.html)).
+The 2026-09-27 report records the initial account setup. New user-provided screenshots
+viewed on **2026-10-11** now show a Free plan, USD 120 remaining credits (USD 100 initial
+plus USD 20 earned), 168 days remaining, and **2027-03-26** as the *displayed plan end date*.
+The active credits have a later expiry in September 2027, which does not extend the Free
+plan. The Zero-Spend Budget is healthy, its actual-cost alert is above USD 0.01, and the
+recipient is `Active (legacy)`. Free Tier usage alerts are enabled; the invoice still shows
+USD 0.00. These are screenshots, not an independent AWS API/account check. Budget-alert
+delivery has not been tested. AWS Budgets can lag and notifications are not a hard cap
+([AWS Budgets documentation](https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-managing-costs.html)).
 
-**Gate remains CLOSED.** Still needed: current account ID/Free status/credit balance and expiry,
-exact budget recipient and alert delivery (record privately), Free Tier usage alerts,
-saved dated Calculator estimate, actual ECR image size/scanning mode, target Region service
+**Gate remains CLOSED.** Still needed: independent account identity check, each credit's
+applicable-product list, exact recipient recorded privately and alert-delivery test, saved
+dated Calculator estimate, actual ECR image size/scanning mode, target-Region service
 availability, public API controls, deployment IAM review, operator/UTC window/teardown plan,
-and separate explicit authorization. No account-specific console or CLI access was available
-for this review; no AWS resource or account setting was changed. Do not store secrets or
-private email addresses in this public repository.
+and separate explicit authorization. No account-specific CLI/API access was available for
+this review; no AWS resource or account setting was changed. Do not store secrets or private
+email addresses in this public repository.
