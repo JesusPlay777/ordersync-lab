@@ -2,6 +2,9 @@
 
 - Status: Accepted for implementation; not deployed
 - Date: 2026-09-29
+- Region amendment: 2026-10-17; target changed from `us-east-1` to `us-east-2` after the
+  account console showed US East (Ohio) enabled by default. Service availability and pricing
+  in the new Region still require verification before deployment.
 
 ## Context
 
@@ -18,7 +21,7 @@ The complete comparison is in
 
 ## Decision
 
-Use the following baseline in `us-east-1`:
+Use the following baseline in `us-east-2`:
 
 - API Gateway HTTP API invokes a Django API Lambda function.
 - The API and worker use one container image from a private ECR repository with separate

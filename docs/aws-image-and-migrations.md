@@ -27,7 +27,7 @@ when an authorized operator invokes it with an explicit event.
 1. Review a clean Git commit, image contents, architecture, RDS CA checksum, ECR scanning mode,
    estimated costs, exact account/Region, and teardown plan. Use one immutable tag based on
    that commit; do not label an image built from uncommitted changes as that commit.
-2. Deploy the ECR repository stack in `us-east-1`, then log in to that account's ECR registry,
+2. Deploy the ECR repository stack in `us-east-2`, then log in to that account's ECR registry,
    tag the locally tested image, and push it. Confirm the pushed image digest and manifest type.
    The publishing identity needs `ecr:GetAuthorizationToken` plus repository-scoped upload
    permissions. No push command is automated by this repository.
@@ -46,10 +46,10 @@ The future publication commands, **not to run until that gate is approved**, are
 
 ```bash
 aws sts get-caller-identity
-aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <reviewed-registry-uri>
+aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin <reviewed-registry-uri>
 docker tag ordersync-lab:cloud-candidate <reviewed-repository-uri>:git-<reviewed-commit>
 docker push <reviewed-repository-uri>:git-<reviewed-commit>
-aws ecr describe-images --region us-east-1 --repository-name ordersync-lab --image-ids imageTag=git-<reviewed-commit>
+aws ecr describe-images --region us-east-2 --repository-name ordersync-lab --image-ids imageTag=git-<reviewed-commit>
 ```
 
 Confirm the account ID, repository URI, pushed `imageDigest`, and single-image

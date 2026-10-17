@@ -29,6 +29,8 @@ resources remain out of scope until the local workflow is complete and measurabl
 - Separate review-only templates model private ECR, VPC, RDS, one generated application secret,
   and cloud API/worker/migration Lambda functions. The local SAM flow remains independent. No AWS
   resources have been deployed.
+- The target Region is `us-east-2` (Ohio), confirmed enabled by default in the account console;
+  service availability, permissions, and the deployment gate remain unverified.
 
 See the [domain definition](docs/domain.md), [local architecture](docs/architecture.md), and
 [AWS architecture evaluation](docs/aws-architecture-evaluation.md). The selected cloud baseline

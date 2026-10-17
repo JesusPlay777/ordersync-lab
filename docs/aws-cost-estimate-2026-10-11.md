@@ -6,6 +6,10 @@ No AWS resources were created for this review. Region: `us-east-1`. The estimate
 the resources in `infra/ecr-repository.yaml`, `infra/network-database.yaml`, and
 `infra/cloud-functions.yaml`, not every service mentioned as a future possibility in ADR 0003.
 
+**Historical Region notice (2026-10-17):** The deployment target changed to `us-east-2`.
+The dollar amounts below remain an `us-east-1` historical model, not an Ohio estimate or
+deployment approval. Obtain a new saved estimate for `us-east-2` before opening the gate.
+
 ## Evidence from the account screenshots
 
 User-provided AWS console screenshots viewed on 2026-10-11 show a **Free** plan, **USD 120**
@@ -77,7 +81,7 @@ and [plan comparison](https://docs.aws.amazon.com/awsaccountbilling/latest/about
 
 | Service in current templates | Public evidence | Account-specific status |
 | --- | --- | --- |
-| RDS PostgreSQL, `db.t4g.micro`, gp3 | AWS describes a Free-plan RDS creation option. For accounts created after 2025-07-15, **do not assume** the legacy 750 instance-hours/20-GB RDS allowance; price its usage and check credit applicability. PostgreSQL 17.10 is a published RDS release. | **Pending:** exact `17.10` + `db.t4g.micro` + gp3 orderability in `us-east-1`, Free-plan access, and credit applicability. |
+| RDS PostgreSQL, `db.t4g.micro`, gp3 | AWS describes a Free-plan RDS creation option. For accounts created after 2025-07-15, **do not assume** the legacy 750 instance-hours/20-GB RDS allowance; price its usage and check credit applicability. PostgreSQL 17.10 is a published RDS release. | **Pending for the amended target:** exact `17.10` + `db.t4g.micro` + gp3 orderability in `us-east-2`, Free-plan access, and credit applicability. |
 | Lambda | An [Always Free allowance](https://aws.amazon.com/lambda/pricing/) of 1 million requests and 400,000 GB-s/month is published; the modeled 44,802/22,180 is below it before other account usage. | Published allowance supports this design; account-wide consumption/quotas not checked. |
 | API Gateway HTTP API | [Pricing](https://aws.amazon.com/api-gateway/pricing/) names API Gateway as credit-eligible; HTTP API is usage-priced. Do **not** assume its older 12-month new-customer promotion applies to this 2026 Free-plan account. | Pending credit/product applicability and API quota check. |
 | EventBridge Scheduler | [14 million free invocations/month](https://aws.amazon.com/eventbridge/pricing/) are published, well above the modeled 43,800 before other account usage. | Published allowance supports this design; account-wide use and access not checked. |
@@ -101,13 +105,13 @@ specific account can create it or that a particular promotional credit covers it
 2. In **Billing > Free Tier**, inspect **Explore our offers** with **Always Free** selected
    for Lambda, CloudWatch and EventBridge Scheduler. This checks offer type, not service
    authorization or remaining account-wide usage.
-3. Select **N. Virginia (`us-east-1`)** in the RDS console and inspect the *Create database*
+3. Select **Ohio (`us-east-2`)** in the RDS console and inspect the *Create database*
    form **without clicking Create**. Confirm PostgreSQL 17.10, Single-AZ, `db.t4g.micro`,
    gp3 20 GiB and the displayed Free-plan option. The read-only RDS API
    [`DescribeOrderableDBInstanceOptions`](https://docs.aws.amazon.com/cli/latest/reference/rds/describe-orderable-db-instance-options.html)
-   can independently confirm the engine/version/class/storage combination if an AWS CLI
-   profile is later configured. The AWS CLI executable was not available in this workspace
-   during this review, so no account-level API call was made.
+   can independently confirm the engine/version/class/storage combination if the deployment
+   identity is granted read-only RDS access. No account-level API call was made in the original
+   2026-10-11 review; a CLI login configured later does not by itself grant RDS permissions.
 4. In **ECR > Private registry > Scanning**, inspect whether the registry is on **Basic** or
    **Enhanced** scanning. [Enhanced scanning](https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-scanning.html)
    uses Amazon Inspector and can add cost. Measure the

@@ -46,13 +46,13 @@ sam-validate:
 	sam validate --lint
 
 infra-validate:
-	sam validate --lint --template-file infra/network-database.yaml --region us-east-1
+	sam validate --lint --template-file infra/network-database.yaml --region us-east-2
 
 cloud-validate:
-	sam validate --lint --template-file infra/cloud-functions.yaml --region us-east-1
+	sam validate --lint --template-file infra/cloud-functions.yaml --region us-east-2
 
 ecr-validate:
-	sam validate --lint --template-file infra/ecr-repository.yaml --region us-east-1
+	sam validate --lint --template-file infra/ecr-repository.yaml --region us-east-2
 
 cloud-image-build:
 	docker buildx build --platform linux/amd64 --provenance=false --load \

@@ -2,8 +2,11 @@
 
 - Status: Complete; no resources created
 - Date: 2026-09-29
-- Proposed Region: `us-east-1` (N. Virginia)
+- Target Region: `us-east-2` (Ohio), amended 2026-10-17 after account-region review
 - Account context: AWS Free plan created after July 15, 2025
+
+The original comparison used some `us-east-1` example prices. Those examples are historical
+and are not an estimate for the amended `us-east-2` deployment target.
 
 ## Executive result
 
@@ -80,11 +83,12 @@ long-running container workloads. Lambda invocations have a 15-minute maximum. S
 
 ### Indicative Fargate baseline
 
-Using the current AWS N. Virginia example rates, one Linux/x86 task with 0.25 vCPU and 0.5 GiB
-running for 730 hours is approximately USD 9 per month. Two always-running tasks are therefore
-approximately USD 18 before networking, database, logs, or storage. An ALB adds an hourly charge:
-its base hourly rate alone is approximately USD 16.43 for 730 hours, before LCUs and public IPv4
-charges. Rates must be recalculated immediately before deployment.
+Using the AWS N. Virginia example rates available at the original review, one Linux/x86 task
+with 0.25 vCPU and 0.5 GiB running for 730 hours is approximately USD 9 per month. Two
+always-running tasks are therefore approximately USD 18 before networking, database, logs,
+or storage. An ALB adds an hourly charge: its base hourly rate alone is approximately USD
+16.43 for 730 hours, before LCUs and public IPv4 charges. Rates must be recalculated
+immediately before deployment.
 
 Sources: [Fargate pricing](https://aws.amazon.com/fargate/pricing/) and
 [Elastic Load Balancing pricing](https://aws.amazon.com/elasticloadbalancing/pricing/).
@@ -304,7 +308,7 @@ credit balance. See
 Before any deployment:
 
 1. Verify the exact credit balance, plan end date, and service eligibility in Billing.
-2. Produce and save an AWS Pricing Calculator estimate for `us-east-1`.
+2. Produce and save an AWS Pricing Calculator estimate for `us-east-2`.
 3. Confirm the existing zero-spend alert recipient and Free Tier usage alerts.
 4. Define a maximum deployment window and teardown date.
 5. Tag every resource with `Project=OrderSyncLab`, `Environment=demo`, and `Owner`.

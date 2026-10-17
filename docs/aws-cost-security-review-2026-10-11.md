@@ -6,6 +6,10 @@ remains closed. Local validation cannot prove account eligibility or cap spendin
 The [reproducible component-by-component estimate](aws-cost-estimate-2026-10-11.md) extends
 this initial cost floor and records the account screenshots received later on 2026-10-11.
 
+**Historical Region notice (2026-10-17):** This review priced `us-east-1`. The active
+deployment target is now `us-east-2`. Keep the figures below as dated evidence only; they
+must not be used to approve or budget the Ohio deployment.
+
 ## Cost model before credits and taxes
 
 The [AWS public RDS Price List for `us-east-1`](https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonRDS/current/us-east-1/index.json), published 2026-10-06, lists PostgreSQL Single-AZ `db.t4g.micro` at **USD 0.016/instance-hour** (SKU `9HPEGXQTDDGH53C9`) and PostgreSQL gp3 storage at **USD 0.115/GB-month** (SKU `KYVYY29G957PKY3B`). At 730 hours and 20 GiB provisioned, that is **USD 11.68 + USD 2.30 = USD 13.98/month**. One secret adds **USD 0.40/secret-month** plus USD 0.05 per 10,000 API calls ([Secrets Manager pricing](https://aws.amazon.com/secrets-manager/pricing/)). The **USD 14.38/month subtotal is a baseline, not an all-in quote or spending limit**. It is the nominal usage value before any eligible Free Tier usage or credit offset. RDS runs and consumes storage while idle. RDS `db.t4g` Unlimited CPU can incur surplus-credit charges.
@@ -19,8 +23,9 @@ Do not assume the USD 100 initial credits reported on 2026-09-27 remain intact, 
 possible extra USD 100 was earned. A Free account closes when its plan ends or credits are
 depleted ([AWS Free-plan terms](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/free-tier-plans.html)).
 
-Use the following inputs in [AWS Pricing Calculator](https://calculator.aws/#/) for `us-east-1`.
-Replace illustrative values with measured traffic/duration before saving:
+The following were the original [AWS Pricing Calculator](https://calculator.aws/#/) inputs
+for `us-east-1`. For the new `us-east-2` target, refresh all region-specific prices and
+replace illustrative values with measured traffic/duration before saving a new estimate:
 
 | Service | Input to model |
 | --- | --- |
