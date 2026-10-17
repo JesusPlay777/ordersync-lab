@@ -19,6 +19,9 @@ templates do not establish Free-plan eligibility or a spending cap.
 | Authorization | Explicit separate approval for resource creation and later public exposure; record who approved and when. |
 
 Status: **pending; deployment not approved**. The dated
+[2026-10-17 read-only gate review](aws-deployment-gate-review-2026-10-17.md) records what was
+confirmed locally and through public prices, the two account API `AccessDenied` results, and
+the exact remaining operator checks. The dated
 [cost and security review](aws-cost-security-review-2026-10-11.md) records controls and open
 security findings. The [detailed monthly estimate and eligibility matrix](aws-cost-estimate-2026-10-11.md)
 records the 2026-10-11 user-provided screenshots: Free plan, USD 120 credits remaining,
