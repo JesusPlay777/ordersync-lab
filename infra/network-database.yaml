@@ -187,10 +187,16 @@ Resources:
     Type: AWS::RDS::DBInstance
     DeletionPolicy: Snapshot
     UpdateReplacePolicy: Snapshot
+    Metadata:
+      cfn-lint:
+        config:
+          # The bundled version list omits the 17.10-R2 RDS revision offered in us-east-2.
+          ignore_checks:
+            - E3691
     Properties:
       DBName: ordersync
       Engine: postgres
-      EngineVersion: "17.10"
+      EngineVersion: "17.10-R2"
       EngineLifecycleSupport: open-source-rds-extended-support-disabled
       DBInstanceClass: db.t4g.micro
       AllocatedStorage: "20"
