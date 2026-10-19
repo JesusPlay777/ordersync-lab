@@ -1,0 +1,19 @@
+FROM public.ecr.aws/lambda/python:3.12
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+WORKDIR ${LAMBDA_TASK_ROOT}
+
+COPY pyproject.toml README.md ./
+COPY src ./src
+
+# RDS uses its own CA hierarchy. Cloud functions set verify-full and point to this bundle;
+# local Compose/SAM has no TLS variables and continues to use its existing database setup.
+# Update the checksum deliberately when AWS rotates the published bundle.
+ADD --checksum=sha256:fe45bbebf92ad3e27a583bbb2ddd1553c521ed4d49af5514dc0a40372ea5395c https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /opt/ordersync/certs/rds-global-bundle.pem
+
+RUN python -m pip install --no-cache-dir .
+
+CMD ["ordersync_lab.lambda_http.handler"]

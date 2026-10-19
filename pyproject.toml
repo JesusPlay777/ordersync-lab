@@ -13,6 +13,7 @@ authors = [{ name = "Jesus Rojas" }]
 dependencies = [
   "Django==5.2.17",
   "djangorestframework==3.17.2",
+  "mangum==0.22.0",
   "psycopg[binary]==3.3.6",
 ]
 

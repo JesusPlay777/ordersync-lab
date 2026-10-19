@@ -1,0 +1,262 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: OrderSync Lab private network and PostgreSQL foundation for review before deployment.
+
+Parameters:
+  Owner:
+    Type: String
+    MinLength: 1
+    Description: Owner tag for the resources in a future, approved deployment.
+  DjangoSecretKey:
+    Type: String
+    NoEcho: true
+    MinLength: 50
+    MaxLength: 128
+    AllowedPattern: "[A-Za-z0-9_-]+"
+    Description: URL-safe Django signing key supplied only at a future approved deployment.
+
+Resources:
+  ApplicationSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: Database credentials and Django signing key for OrderSync Lab.
+      GenerateSecretString:
+        SecretStringTemplate: !Sub '{"username":"ordersync_admin","django_secret_key":"${DjangoSecretKey}"}'
+        GenerateStringKey: password
+        PasswordLength: 40
+        ExcludePunctuation: true
+      Tags:
+        - Key: Project
+          Value: OrderSyncLab
+        - Key: Environment
+          Value: demo
+        - Key: Owner
+          Value: !Ref Owner
+
+  PrivateVpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.44.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: ordersync-lab-private
+        - Key: Project
+          Value: OrderSyncLab
+        - Key: Environment
+          Value: demo
+        - Key: Owner
+          Value: !Ref Owner
+
+  PrivateSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref PrivateVpc
+      CidrBlock: 10.44.1.0/24
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: ordersync-lab-private-a
+        - Key: Project
+          Value: OrderSyncLab
+        - Key: Environment
+          Value: demo
+        - Key: Owner
+          Value: !Ref Owner
+
+  PrivateSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref PrivateVpc
+      CidrBlock: 10.44.2.0/24
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: ordersync-lab-private-b
+        - Key: Project
+          Value: OrderSyncLab
+        - Key: Environment
+          Value: demo
+        - Key: Owner
+          Value: !Ref Owner
+
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref PrivateVpc
+      Tags:
+        - Key: Name
+          Value: ordersync-lab-private
+        - Key: Project
+          Value: OrderSyncLab
+        - Key: Environment
+          Value: demo
+        - Key: Owner
+          Value: !Ref Owner
+
+  PrivateSubnetARouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnetA
+      RouteTableId: !Ref PrivateRouteTable
+
+  PrivateSubnetBRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnetB
+      RouteTableId: !Ref PrivateRouteTable
+
+  LambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Lambda functions can connect only to OrderSync PostgreSQL on port 5432.
+      VpcId: !Ref PrivateVpc
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          DestinationSecurityGroupId: !Ref DatabaseSecurityGroup
+      Tags:
+        - Key: Name
+          Value: ordersync-lab-lambda
+        - Key: Project
+          Value: OrderSyncLab
+        - Key: Environment
+          Value: demo
+        - Key: Owner
+          Value: !Ref Owner
+
+  DatabaseSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: PostgreSQL accepts connections from the OrderSync Lambda security group.
+      VpcId: !Ref PrivateVpc
+      Tags:
+        - Key: Name
+          Value: ordersync-lab-database
+        - Key: Project
+          Value: OrderSyncLab
+        - Key: Environment
+          Value: demo
+        - Key: Owner
+          Value: !Ref Owner
+
+  DatabaseIngressFromLambda:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DatabaseSecurityGroup
+      IpProtocol: tcp
+      FromPort: 5432
+      ToPort: 5432
+      SourceSecurityGroupId: !Ref LambdaSecurityGroup
+      Description: PostgreSQL access from OrderSync Lambda functions only.
+
+  DatabaseSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Two private subnets for the OrderSync PostgreSQL instance.
+      SubnetIds:
+        - !Ref PrivateSubnetA
+        - !Ref PrivateSubnetB
+      Tags:
+        - Key: Project
+          Value: OrderSyncLab
+        - Key: Environment
+          Value: demo
+        - Key: Owner
+          Value: !Ref Owner
+
+  DatabaseParameterGroup:
+    Type: AWS::RDS::DBParameterGroup
+    Properties:
+      Description: Require TLS for OrderSync PostgreSQL 17 connections.
+      Family: postgres17
+      Parameters:
+        rds.force_ssl: "1"
+      Tags:
+        - Key: Project
+          Value: OrderSyncLab
+        - Key: Environment
+          Value: demo
+        - Key: Owner
+          Value: !Ref Owner
+
+  DatabaseInstance:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Snapshot
+    UpdateReplacePolicy: Snapshot
+    Metadata:
+      cfn-lint:
+        config:
+          # The bundled version list omits the 17.10-R2 RDS revision offered in us-east-2.
+          ignore_checks:
+            - E3691
+    Properties:
+      DBName: ordersync
+      Engine: postgres
+      EngineVersion: "17.10-R2"
+      EngineLifecycleSupport: open-source-rds-extended-support-disabled
+      DBInstanceClass: db.t4g.micro
+      AllocatedStorage: "20"
+      StorageType: gp3
+      StorageEncrypted: true
+      MultiAZ: false
+      PubliclyAccessible: false
+      DBSubnetGroupName: !Ref DatabaseSubnetGroup
+      VPCSecurityGroups:
+        - !Ref DatabaseSecurityGroup
+      DBParameterGroupName: !Ref DatabaseParameterGroup
+      MasterUsername: ordersync_admin
+      MasterUserPassword: !Sub "{{resolve:secretsmanager:${ApplicationSecret}:SecretString:password}}"
+      BackupRetentionPeriod: 1
+      DeletionProtection: true
+      CopyTagsToSnapshot: true
+      Tags:
+        - Key: Project
+          Value: OrderSyncLab
+        - Key: Environment
+          Value: demo
+        - Key: Owner
+          Value: !Ref Owner
+
+Outputs:
+  VpcId:
+    Description: VPC for future OrderSync Lambda functions and RDS.
+    Value: !Ref PrivateVpc
+    Export:
+      Name: !Sub "${AWS::StackName}-VpcId"
+  PrivateSubnetAId:
+    Description: First private subnet for cloud Lambda VpcConfig.
+    Value: !Ref PrivateSubnetA
+    Export:
+      Name: !Sub "${AWS::StackName}-PrivateSubnetAId"
+  PrivateSubnetBId:
+    Description: Second private subnet for cloud Lambda VpcConfig.
+    Value: !Ref PrivateSubnetB
+    Export:
+      Name: !Sub "${AWS::StackName}-PrivateSubnetBId"
+  PrivateSubnetIds:
+    Description: Private subnets for future Lambda VpcConfig.
+    Value: !Join [",", [!Ref PrivateSubnetA, !Ref PrivateSubnetB]]
+  LambdaSecurityGroupId:
+    Description: Security group for future Lambda VpcConfig.
+    Value: !Ref LambdaSecurityGroup
+    Export:
+      Name: !Sub "${AWS::StackName}-LambdaSecurityGroupId"
+  DatabaseEndpoint:
+    Description: Private RDS endpoint for future deployment-time configuration.
+    Value: !GetAtt DatabaseInstance.Endpoint.Address
+    Export:
+      Name: !Sub "${AWS::StackName}-DatabaseEndpoint"
+  DatabasePort:
+    Description: PostgreSQL port.
+    Value: !GetAtt DatabaseInstance.Endpoint.Port
+    Export:
+      Name: !Sub "${AWS::StackName}-DatabasePort"
+  ApplicationSecretArn:
+    Description: ARN of the application secret; the value itself is not exported.
+    Value: !Ref ApplicationSecret
+    Export:
+      Name: !Sub "${AWS::StackName}-ApplicationSecretArn"

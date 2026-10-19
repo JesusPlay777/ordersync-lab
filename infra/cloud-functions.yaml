@@ -1,0 +1,320 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Review-only cloud API and worker, connected to the private OrderSync RDS stack.
+
+Parameters:
+  NetworkStackName:
+    Type: String
+    MinLength: 1
+    Description: Name of the separately approved network-database CloudFormation stack.
+  LambdaImageUri:
+    Type: String
+    MinLength: 1
+    AllowedPattern: ".+@sha256:[a-f0-9]{64}"
+    Description: Reviewed ECR image URI pinned to a digest; not built by this template.
+  EnablePublicApi:
+    Type: String
+    Default: "false"
+    AllowedValues:
+      - "false"
+      - "true"
+    Description: Keep false until the one-off migration has succeeded and API checks pass.
+  Owner:
+    Type: String
+    MinLength: 1
+    Description: Owner tag for a future approved deployment.
+
+Conditions:
+  PublicApiEnabled: !Equals [!Ref EnablePublicApi, "true"]
+
+Globals:
+  Function:
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        DJANGO_SETTINGS_MODULE: ordersync_lab.settings
+        DJANGO_DEBUG: "false"
+        DJANGO_ALLOWED_HOSTS: !Sub ".execute-api.${AWS::Region}.amazonaws.com"
+        DJANGO_SECRET_KEY: !Sub
+          - "{{resolve:secretsmanager:${SecretArn}:SecretString:django_secret_key}}"
+          - SecretArn:
+              Fn::ImportValue: !Sub "${NetworkStackName}-ApplicationSecretArn"
+        POSTGRES_DB: ordersync
+        POSTGRES_USER: ordersync_admin
+        POSTGRES_PASSWORD: !Sub
+          - "{{resolve:secretsmanager:${SecretArn}:SecretString:password}}"
+          - SecretArn:
+              Fn::ImportValue: !Sub "${NetworkStackName}-ApplicationSecretArn"
+        POSTGRES_HOST:
+          Fn::ImportValue: !Sub "${NetworkStackName}-DatabaseEndpoint"
+        POSTGRES_PORT:
+          Fn::ImportValue: !Sub "${NetworkStackName}-DatabasePort"
+        POSTGRES_SSLMODE: verify-full
+        POSTGRES_SSLROOTCERT: /opt/ordersync/certs/rds-global-bundle.pem
+        POSTGRES_CONN_MAX_AGE: "0"
+        ORDERSYNC_MAX_ATTEMPTS: "3"
+        ORDERSYNC_RETRY_DELAYS_SECONDS: "60,300"
+        ORDERSYNC_JOB_LOCK_TIMEOUT_SECONDS: "300"
+        ORDERSYNC_WORKER_BATCH_SIZE: "10"
+        ORDERSYNC_WORKER_MIN_REMAINING_MS: "5000"
+    Tags:
+      Project: OrderSyncLab
+      Environment: demo
+      Owner: !Ref Owner
+
+Resources:
+  OrderSyncHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: $default
+      DisableExecuteApiEndpoint: !If [PublicApiEnabled, false, true]
+      DefinitionBody:
+        openapi: 3.0.1
+        info:
+          title: OrderSync Lab HTTP API
+          version: "1.0"
+        paths: {}
+      Tags:
+        Project: OrderSyncLab
+        Environment: demo
+        Owner: !Ref Owner
+
+  ApiLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-api"
+      RetentionInDays: 7
+
+  WorkerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-worker"
+      RetentionInDays: 7
+
+  MigrationLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-migrate"
+      RetentionInDays: 7
+
+  ApiExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: VpcAndApiLogs
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: ManageVpcNetworkInterfaces
+                Effect: Allow
+                Action:
+                  - ec2:CreateNetworkInterface
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:DescribeSubnets
+                  - ec2:DeleteNetworkInterface
+                  - ec2:AssignPrivateIpAddresses
+                  - ec2:UnassignPrivateIpAddresses
+                Resource: "*"
+              - Sid: DenyVpcCallsFromFunctionCode
+                Effect: Deny
+                Action:
+                  - ec2:CreateNetworkInterface
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:DescribeSubnets
+                  - ec2:DeleteNetworkInterface
+                  - ec2:AssignPrivateIpAddresses
+                  - ec2:UnassignPrivateIpAddresses
+                Resource: "*"
+                Condition:
+                  ArnEquals:
+                    lambda:SourceFunctionArn: !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-api"
+              - Sid: WriteApiLogs
+                Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !GetAtt ApiLogGroup.Arn
+
+  WorkerExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: VpcAndWorkerLogs
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: ManageVpcNetworkInterfaces
+                Effect: Allow
+                Action:
+                  - ec2:CreateNetworkInterface
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:DescribeSubnets
+                  - ec2:DeleteNetworkInterface
+                  - ec2:AssignPrivateIpAddresses
+                  - ec2:UnassignPrivateIpAddresses
+                Resource: "*"
+              - Sid: DenyVpcCallsFromFunctionCode
+                Effect: Deny
+                Action:
+                  - ec2:CreateNetworkInterface
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:DescribeSubnets
+                  - ec2:DeleteNetworkInterface
+                  - ec2:AssignPrivateIpAddresses
+                  - ec2:UnassignPrivateIpAddresses
+                Resource: "*"
+                Condition:
+                  ArnEquals:
+                    lambda:SourceFunctionArn: !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-worker"
+              - Sid: WriteWorkerLogs
+                Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !GetAtt WorkerLogGroup.Arn
+
+  MigrationExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: VpcAndMigrationLogs
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: ManageVpcNetworkInterfaces
+                Effect: Allow
+                Action:
+                  - ec2:CreateNetworkInterface
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:DescribeSubnets
+                  - ec2:DeleteNetworkInterface
+                  - ec2:AssignPrivateIpAddresses
+                  - ec2:UnassignPrivateIpAddresses
+                Resource: "*"
+              - Sid: DenyVpcCallsFromFunctionCode
+                Effect: Deny
+                Action:
+                  - ec2:CreateNetworkInterface
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:DescribeSubnets
+                  - ec2:DeleteNetworkInterface
+                  - ec2:AssignPrivateIpAddresses
+                  - ec2:UnassignPrivateIpAddresses
+                Resource: "*"
+                Condition:
+                  ArnEquals:
+                    lambda:SourceFunctionArn: !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-migrate"
+              - Sid: WriteMigrationLogs
+                Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !GetAtt MigrationLogGroup.Arn
+
+  OrderSyncApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      FunctionName: !Sub "${AWS::StackName}-api"
+      ImageUri: !Ref LambdaImageUri
+      ImageConfig:
+        Command:
+          - ordersync_lab.lambda_http.handler
+      Role: !GetAtt ApiExecutionRole.Arn
+      MemorySize: 512
+      Timeout: 30
+      ReservedConcurrentExecutions: 2
+      VpcConfig:
+        SecurityGroupIds:
+          - Fn::ImportValue: !Sub "${NetworkStackName}-LambdaSecurityGroupId"
+        SubnetIds:
+          - Fn::ImportValue: !Sub "${NetworkStackName}-PrivateSubnetAId"
+          - Fn::ImportValue: !Sub "${NetworkStackName}-PrivateSubnetBId"
+      Events:
+        Proxy:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref OrderSyncHttpApi
+            Method: ANY
+            Path: /{proxy+}
+            PayloadFormatVersion: "2.0"
+
+  OrderSyncWorkerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      FunctionName: !Sub "${AWS::StackName}-worker"
+      ImageUri: !Ref LambdaImageUri
+      ImageConfig:
+        Command:
+          - ordersync_lab.lambda_worker.handler
+      Role: !GetAtt WorkerExecutionRole.Arn
+      MemorySize: 512
+      Timeout: 60
+      ReservedConcurrentExecutions: 1
+      VpcConfig:
+        SecurityGroupIds:
+          - Fn::ImportValue: !Sub "${NetworkStackName}-LambdaSecurityGroupId"
+        SubnetIds:
+          - Fn::ImportValue: !Sub "${NetworkStackName}-PrivateSubnetAId"
+          - Fn::ImportValue: !Sub "${NetworkStackName}-PrivateSubnetBId"
+      Events:
+        WorkerSchedule:
+          Type: ScheduleV2
+          Properties:
+            Description: Invoke the bounded OrderSync worker once per minute.
+            ScheduleExpression: rate(1 minute)
+            FlexibleTimeWindow:
+              Mode: "OFF"
+            Input: '{"source":"ordersync.scheduler","detail-type":"OrderSync Worker Tick"}'
+            State: DISABLED
+
+  OrderSyncMigrationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      FunctionName: !Sub "${AWS::StackName}-migrate"
+      ImageUri: !Ref LambdaImageUri
+      ImageConfig:
+        Command:
+          - ordersync_lab.lambda_migrate.handler
+      Role: !GetAtt MigrationExecutionRole.Arn
+      MemorySize: 512
+      Timeout: 300
+      ReservedConcurrentExecutions: 1
+      VpcConfig:
+        SecurityGroupIds:
+          - Fn::ImportValue: !Sub "${NetworkStackName}-LambdaSecurityGroupId"
+        SubnetIds:
+          - Fn::ImportValue: !Sub "${NetworkStackName}-PrivateSubnetAId"
+          - Fn::ImportValue: !Sub "${NetworkStackName}-PrivateSubnetBId"
+
+Outputs:
+  HttpApiId:
+    Description: HTTP API ID; default endpoint is disabled until explicitly enabled.
+    Value: !Ref OrderSyncHttpApi
+  MigrationFunctionName:
+    Description: Manually invoke with plan, then an explicitly confirmed apply event.
+    Value: !Ref OrderSyncMigrationFunction

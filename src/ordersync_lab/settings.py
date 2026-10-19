@@ -56,9 +56,18 @@ DATABASES = {
         "PASSWORD": os.getenv("POSTGRES_PASSWORD", "ordersync_local"),
         "HOST": os.getenv("POSTGRES_HOST", "127.0.0.1"),
         "PORT": os.getenv("POSTGRES_PORT", "5433"),
-        "CONN_MAX_AGE": 60,
+        "CONN_MAX_AGE": int(os.getenv("POSTGRES_CONN_MAX_AGE", "0")),
     }
 }
+
+postgres_sslmode = os.getenv("POSTGRES_SSLMODE")
+postgres_sslrootcert = os.getenv("POSTGRES_SSLROOTCERT")
+if postgres_sslmode or postgres_sslrootcert:
+    DATABASES["default"]["OPTIONS"] = {}
+    if postgres_sslmode:
+        DATABASES["default"]["OPTIONS"]["sslmode"] = postgres_sslmode
+    if postgres_sslrootcert:
+        DATABASES["default"]["OPTIONS"]["sslrootcert"] = postgres_sslrootcert
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
@@ -75,6 +84,8 @@ ORDERSYNC_RETRY_DELAYS_SECONDS = tuple(
     if value.strip()
 )
 ORDERSYNC_JOB_LOCK_TIMEOUT_SECONDS = int(os.getenv("ORDERSYNC_JOB_LOCK_TIMEOUT_SECONDS", "300"))
+ORDERSYNC_WORKER_BATCH_SIZE = int(os.getenv("ORDERSYNC_WORKER_BATCH_SIZE", "10"))
+ORDERSYNC_WORKER_MIN_REMAINING_MS = int(os.getenv("ORDERSYNC_WORKER_MIN_REMAINING_MS", "5000"))
 
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],

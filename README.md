@@ -8,7 +8,7 @@ resources remain out of scope until the local workflow is complete and measurabl
 
 ## Current milestone
 
-`Phase 2 - First local vertical slice complete`
+`Phase 3 - AWS architecture evaluated; not deployed`
 
 - Python 3.12 and Django 5.2 LTS run locally with PostgreSQL 17 through Docker Compose.
 - The API atomically accepts immutable Mercury Storefront orders.
@@ -16,10 +16,31 @@ resources remain out of scope until the local workflow is complete and measurabl
 - A separate worker processes durable PostgreSQL jobs through the fake Atlas Warehouse adapter.
 - Atlas supports all-or-nothing stock reservations, deterministic failures, and safe retries.
 - Order status exposes attempts, inventory results, correlation IDs, and audit events.
-- Fourteen automated tests cover the first slice; no AWS resource has been created.
+- Automated tests cover the local flow; no AWS resource has been created.
+- The first AWS baseline is documented as API Gateway, Lambda, private RDS PostgreSQL, ECR,
+  Parameter Store, Secrets Manager, CloudWatch, and EventBridge Scheduler.
+- The existing PostgreSQL job table remains the durable queue until measured requirements
+  justify an outbox-to-SQS design.
+- An HTTP Lambda handler locally adapts API Gateway HTTP API v2 events to the same Django ASGI
+  application and is covered by integration tests.
+- A scheduled Lambda worker processes a bounded batch and stops before its timeout budget.
+- An AWS SAM template packages the API, worker and manual migration handler locally; its
+  schedule is disabled and it creates nothing unless someone explicitly deploys it.
+- Separate review-only templates model private ECR, VPC, RDS, one generated application secret,
+  and cloud API/worker/migration Lambda functions. The local SAM flow remains independent. No AWS
+  resources have been deployed.
+- The target Region is `us-east-2` (Ohio), confirmed enabled by default in the account console;
+  service availability, permissions, and the deployment gate remain unverified.
 
 See the [domain definition](docs/domain.md), [local architecture](docs/architecture.md), and
-[idempotency decision](docs/adr/0002-idempotent-order-synchronization.md).
+[AWS architecture evaluation](docs/aws-architecture-evaluation.md). The selected cloud baseline
+is recorded in [ADR 0003](docs/adr/0003-serverless-aws-baseline.md). The local SAM workflow is
+documented in [docs/sam-local.md](docs/sam-local.md).
+The cloud infrastructure drafts are described in
+[docs/aws-network-database.md](docs/aws-network-database.md) and
+[docs/aws-cloud-functions.md](docs/aws-cloud-functions.md). ECR image publication and migration
+order are in [docs/aws-image-and-migrations.md](docs/aws-image-and-migrations.md); the
+[deployment gate](docs/aws-deployment-gate.md) is still pending.
 
 ## Requirements
 
@@ -108,6 +129,5 @@ part of the normal stop command.
 
 ## Next milestone
 
-Evaluate AWS services against this working flow, document security and cost tradeoffs, and
-choose the smallest cloud architecture that preserves its delivery and observability guarantees.
-
+Complete the account-specific cost/security gate, then design Parameter Store configuration
+and useful CloudWatch alarms. No AWS write is authorized by these templates or docs.
